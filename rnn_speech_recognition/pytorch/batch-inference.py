@@ -31,6 +31,7 @@ import random
 import numpy as np
 import pickle
 import time
+import os
 
 import torchvision
 
@@ -238,14 +239,54 @@ def main(args):
 
     greedy_decoder = RNNTGreedyDecoder(len(ctc_vocab) - 1, model.module if multi_gpu else model)
 
-    eval(
-        data_layer=data_layer,
-        audio_processor=eval_transforms,
-        encoderdecoder=model,
-        greedy_decoder=greedy_decoder,
-        labels=ctc_vocab,
-        args=args,
-        multi_gpu=multi_gpu)
+    all_audio_files = get_all_audio_files(args)
+
+    for audio_file in all_audio_files:
+        print("Audio file:", audio_file)
+        update_arguments(args, audio_file)
+
+        eval(
+            data_layer=data_layer,
+            audio_processor=eval_transforms,
+            encoderdecoder=model,
+            greedy_decoder=greedy_decoder,
+            labels=ctc_vocab,
+            args=args,
+            multi_gpu=multi_gpu)
+
+def update_arguments(args, audio_file):
+    args.wav = audio_file
+
+    args.save_prediction = rename_file(audio_file)
+
+    print(args)
+
+def rename_file(audio_file):
+    base, extension = os.path.splitext(audio_file)
+
+    return os.path.join(base + "-greedy-transcribed.txt")
+
+
+def get_all_audio_files(args):
+    files = []
+
+    for root, directories, all_files in os.walk(args.wav):
+        for name in all_files:
+            path = os.path.join(root, name)
+            if is_wav(path):
+                files.append(path)
+
+    print("Files:", files)
+
+    return files
+
+def is_wav(filename):
+    if not os.path.isfile(filename):
+        return False
+
+    extension = os.path.splitext(filename)[1]
+
+    return extension == ".wav"
 
 if __name__=="__main__":
     args = parse_args()

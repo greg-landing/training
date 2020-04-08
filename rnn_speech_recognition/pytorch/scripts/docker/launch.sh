@@ -29,4 +29,4 @@ docker run -it --rm \
   -v "$RESULT_DIR":/results/ \
   -v $PWD:/code \
   -v $PWD:/workspace/jasper \
-  mlperf-rnnt-ref bash
+  jasper bash
